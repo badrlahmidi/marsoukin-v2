@@ -1,49 +1,66 @@
-import axios from '@/lib/axios';
-import type {
-  Product,
-  ApiResponse,
-  PaginatedResponse,
-} from '@/types';
+import apiClient from '@/lib/axios';
+import { Product, ProductFilters, ApiResponse, PaginatedResponse } from '@/types';
 
-interface ProductFilters {
-  category_id?: number;
-  artisan_id?: number;
-  min_price?: number;
-  max_price?: number;
-  city?: string;
-  search?: string;
-  sort_by?: 'price_asc' | 'price_desc' | 'newest' | 'popular';
-  page?: number;
-  per_page?: number;
-}
-
-export const productService = {
-  async getAll(filters?: ProductFilters): Promise<PaginatedResponse<Product>> {
-    const response = await axios.get<PaginatedResponse<Product>>('/products', {
+class ProductService {
+  /**
+   * Récupérer la liste des produits
+   */
+  async getProducts(filters?: ProductFilters): Promise<PaginatedResponse<Product>> {
+    const response = await apiClient.get<PaginatedResponse<Product>>('/products', {
       params: filters,
     });
     return response.data;
-  },
+  }
 
-  async getBySlug(slug: string): Promise<Product> {
-    const response = await axios.get<ApiResponse<Product>>(`/products/${slug}`);
+  /**
+   * Récupérer les produits en vedette
+   */
+  async getFeaturedProducts(limit: number = 8): Promise<Product[]> {
+    const response = await apiClient.get<ApiResponse<Product[]>>('/products/featured', {
+      params: { limit },
+    });
     return response.data.data;
-  },
+  }
 
-  async getFeatured(): Promise<Product[]> {
-    const response = await axios.get<ApiResponse<Product[]>>(
-      '/products/featured'
+  /**
+   * Rechercher des produits
+   */
+  async searchProducts(query: string, filters?: ProductFilters): Promise<PaginatedResponse<Product>> {
+    const response = await apiClient.get<PaginatedResponse<Product>>('/products/search', {
+      params: { search: query, ...filters },
+    });
+    return response.data;
+  }
+
+  /**
+   * Récupérer un produit par son slug
+   */
+  async getProduct(slug: string): Promise<Product> {
+    const response = await apiClient.get<ApiResponse<Product>>(`/products/${slug}`);
+    return response.data.data;
+  }
+
+  /**
+   * Récupérer les produits d'une catégorie
+   */
+  async getProductsByCategory(categorySlug: string, filters?: ProductFilters): Promise<PaginatedResponse<Product>> {
+    const response = await apiClient.get<PaginatedResponse<Product>>(
+      `/categories/${categorySlug}/products`,
+      { params: filters }
     );
-    return response.data.data;
-  },
+    return response.data;
+  }
 
-  async search(query: string): Promise<Product[]> {
-    const response = await axios.get<ApiResponse<Product[]>>(
-      '/products/search',
-      {
-        params: { q: query },
-      }
+  /**
+   * Récupérer les produits d'un artisan
+   */
+  async getProductsByArtisan(artisanSlug: string, filters?: ProductFilters): Promise<PaginatedResponse<Product>> {
+    const response = await apiClient.get<PaginatedResponse<Product>>(
+      `/artisans/${artisanSlug}/products`,
+      { params: filters }
     );
-    return response.data.data;
-  },
-};
+    return response.data;
+  }
+}
+
+export default new ProductService();
