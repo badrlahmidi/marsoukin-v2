@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User } from '@/types';
-import { authService } from '@/services/authService';
+import { User, LoginCredentials, RegisterData } from '@/types';
+import { authService } from '@/services';
 
 interface AuthState {
   user: User | null;
@@ -11,16 +11,14 @@ interface AuthState {
   error: string | null;
   
   // Actions
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
-  clearError: () => void;
   checkAuth: () => Promise<void>;
+  clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(\n  persist(
+export const useAuthStore = create<AuthState>()(  persist(
     (set, get) => ({
       user: null,
       token: null,
@@ -28,47 +26,36 @@ export const useAuthStore = create<AuthState>()(\n  persist(
       isLoading: false,
       error: null,
 
-      login: async (email, password) => {
+      login: async (credentials) => {
+        set({ isLoading: true, error: null });
         try {
-          set({ isLoading: true, error: null });
-          const response = await authService.login({ email, password });
-          
+          const authData = await authService.login(credentials);
           set({
-            user: response.user,
-            token: response.token,
+            user: authData.user,
+            token: authData.token,
             isAuthenticated: true,
             isLoading: false,
           });
-          
-          // Store token in localStorage
-          localStorage.setItem('auth_token', response.token);
         } catch (error: any) {
-          set({
-            error: error.response?.data?.message || 'Login failed',
-            isLoading: false,
-          });
+          const errorMessage = error.response?.data?.message || 'Erreur de connexion';
+          set({ error: errorMessage, isLoading: false });
           throw error;
         }
       },
 
       register: async (data) => {
+        set({ isLoading: true, error: null });
         try {
-          set({ isLoading: true, error: null });
-          const response = await authService.register(data);
-          
+          const authData = await authService.register(data);
           set({
-            user: response.user,
-            token: response.token,
+            user: authData.user,
+            token: authData.token,
             isAuthenticated: true,
             isLoading: false,
           });
-          
-          localStorage.setItem('auth_token', response.token);
         } catch (error: any) {
-          set({
-            error: error.response?.data?.message || 'Registration failed',
-            isLoading: false,
-          });
+          const errorMessage = error.response?.data?.message || 'Erreur d\'inscription';
+          set({ error: errorMessage, isLoading: false });
           throw error;
         }
       },
@@ -76,34 +63,18 @@ export const useAuthStore = create<AuthState>()(\n  persist(
       logout: async () => {
         try {
           await authService.logout();
-        } catch (error) {
-          console.error('Logout error:', error);
         } finally {
           set({
             user: null,
             token: null,
             isAuthenticated: false,
+            error: null,
           });
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_user');
         }
       },
-
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
-      
-      setToken: (token) => {
-        set({ token });
-        if (token) {
-          localStorage.setItem('auth_token', token);
-        } else {
-          localStorage.removeItem('auth_token');
-        }
-      },
-
-      clearError: () => set({ error: null }),
 
       checkAuth: async () => {
-        const token = get().token;
+        const token = authService.getToken();
         if (!token) {
           set({ isAuthenticated: false, user: null });
           return;
@@ -111,18 +82,20 @@ export const useAuthStore = create<AuthState>()(\n  persist(
 
         try {
           const user = await authService.me();
-          set({ user, isAuthenticated: true });
+          set({ user, isAuthenticated: true, token });
         } catch (error) {
           set({ user: null, token: null, isAuthenticated: false });
-          localStorage.removeItem('auth_token');
         }
       },
+
+      clearError: () => set({ error: null }),
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({
         user: state.user,
         token: state.token,
+        isAuthenticated: state.isAuthenticated,
       }),
     }
   )
