@@ -1,22 +1,20 @@
 import apiClient from '@/lib/axios';
-import { Category, ApiResponse } from '@/types';
+import { Category } from '@/types/product';
 
-class CategoryService {
+export const categoryService = {
   /**
    * Récupérer toutes les catégories
    */
-  async getCategories(): Promise<Category[]> {
-    const response = await apiClient.get<ApiResponse<Category[]>>('/categories');
-    return response.data.data;
-  }
+  async getAll() {
+    const response = await apiClient.get<{ data: Category[] }>('/categories');
+    return response.data;
+  },
 
   /**
    * Récupérer une catégorie par son slug
    */
-  async getCategory(slug: string): Promise<Category> {
-    const response = await apiClient.get<ApiResponse<Category>>(`/categories/${slug}`);
-    return response.data.data;
-  }
-}
-
-export default new CategoryService();
+  async getBySlug(slug: string) {
+    const response = await apiClient.get<{ data: Category }>(`/categories/${slug}`);
+    return response.data;
+  },
+};
