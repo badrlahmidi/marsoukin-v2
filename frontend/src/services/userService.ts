@@ -1,71 +1,73 @@
-import axios from '@/lib/axios';
-import type { User, Address, ApiResponse } from '@/types';
+import apiClient from '@/lib/axios';
+import { User, Address, ApiResponse } from '@/types';
 
 interface UpdateProfileData {
   name?: string;
+  email?: string;
   phone?: string;
-  avatar?: File;
 }
 
-interface AddressData {
-  label: string;
+interface CreateAddressData {
   full_name: string;
   phone: string;
   address_line1: string;
   address_line2?: string;
   city: string;
+  state?: string;
   postal_code: string;
+  country: string;
   is_default?: boolean;
 }
 
-export const userService = {
+type UpdateAddressData = Partial<CreateAddressData>;
+
+class UserService {
+  /**
+   * Récupérer le profil utilisateur
+   */
   async getProfile(): Promise<User> {
-    const response = await axios.get<ApiResponse<User>>('/user/profile');
+    const response = await apiClient.get<ApiResponse<User>>('/user/profile');
     return response.data.data;
-  },
+  }
 
+  /**
+   * Mettre à jour le profil
+   */
   async updateProfile(data: UpdateProfileData): Promise<User> {
-    const formData = new FormData();
-    if (data.name) formData.append('name', data.name);
-    if (data.phone) formData.append('phone', data.phone);
-    if (data.avatar) formData.append('avatar', data.avatar);
-
-    const response = await axios.post<ApiResponse<User>>(
-      '/user/profile',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+    const response = await apiClient.put<ApiResponse<User>>('/user/profile', data);
     return response.data.data;
-  },
+  }
 
+  /**
+   * Récupérer les adresses
+   */
   async getAddresses(): Promise<Address[]> {
-    const response = await axios.get<ApiResponse<Address[]>>(
-      '/user/addresses'
-    );
+    const response = await apiClient.get<ApiResponse<Address[]>>('/user/addresses');
     return response.data.data;
-  },
+  }
 
-  async createAddress(data: AddressData): Promise<Address> {
-    const response = await axios.post<ApiResponse<Address>>(
-      '/user/addresses',
-      data
-    );
+  /**
+   * Créer une nouvelle adresse
+   */
+  async createAddress(data: CreateAddressData): Promise<Address> {
+    const response = await apiClient.post<ApiResponse<Address>>('/user/addresses', data);
     return response.data.data;
-  },
+  }
 
-  async updateAddress(id: number, data: AddressData): Promise<Address> {
-    const response = await axios.put<ApiResponse<Address>>(
-      `/user/addresses/${id}`,
-      data
-    );
+  /**
+   * Mettre à jour une adresse
+   */
+  async updateAddress(id: number, data: UpdateAddressData): Promise<Address> {
+    const response = await apiClient.put<ApiResponse<Address>>(`/user/addresses/${id}`, data);
     return response.data.data;
-  },
+  }
 
+  /**
+   * Supprimer une adresse
+   */
   async deleteAddress(id: number): Promise<void> {
-    await axios.delete(`/user/addresses/${id}`);
-  },
-};
+    await apiClient.delete(`/user/addresses/${id}`);
+  }
+}
+
+export default new UserService();

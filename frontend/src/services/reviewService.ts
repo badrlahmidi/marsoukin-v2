@@ -1,27 +1,29 @@
-import axios from '@/lib/axios';
-import type { Review, ApiResponse } from '@/types';
+import apiClient from '@/lib/axios';
+import { Review, CreateReviewData, UpdateReviewData, ApiResponse } from '@/types';
 
-interface CreateReviewData {
-  product_id: number;
-  rating: number;
-  comment?: string;
+class ReviewService {
+  /**
+   * Créer un avis
+   */
+  async createReview(data: CreateReviewData): Promise<Review> {
+    const response = await apiClient.post<ApiResponse<Review>>('/reviews', data);
+    return response.data.data;
+  }
+
+  /**
+   * Mettre à jour un avis
+   */
+  async updateReview(id: number, data: UpdateReviewData): Promise<Review> {
+    const response = await apiClient.put<ApiResponse<Review>>(`/reviews/${id}`, data);
+    return response.data.data;
+  }
+
+  /**
+   * Supprimer un avis
+   */
+  async deleteReview(id: number): Promise<void> {
+    await apiClient.delete(`/reviews/${id}`);
+  }
 }
 
-export const reviewService = {
-  async create(data: CreateReviewData): Promise<Review> {
-    const response = await axios.post<ApiResponse<Review>>('/reviews', data);
-    return response.data.data;
-  },
-
-  async update(id: number, data: Partial<CreateReviewData>): Promise<Review> {
-    const response = await axios.put<ApiResponse<Review>>(
-      `/reviews/${id}`,
-      data
-    );
-    return response.data.data;
-  },
-
-  async delete(id: number): Promise<void> {
-    await axios.delete(`/reviews/${id}`);
-  },
-};
+export default new ReviewService();

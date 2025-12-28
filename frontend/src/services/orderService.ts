@@ -1,36 +1,40 @@
-import axios from '@/lib/axios';
-import type { Order, ApiResponse, PaginatedResponse } from '@/types';
+import apiClient from '@/lib/axios';
+import { Order, CreateOrderData, OrderFilters, ApiResponse, PaginatedResponse } from '@/types';
 
-interface CreateOrderData {
-  address_id: number;
-  payment_method: 'cash_on_delivery' | 'card' | 'bank_transfer';
-  notes?: string;
-}
-
-export const orderService = {
-  async getAll(page = 1): Promise<PaginatedResponse<Order>> {
-    const response = await axios.get<PaginatedResponse<Order>>('/orders', {
-      params: { page },
+class OrderService {
+  /**
+   * Récupérer la liste des commandes
+   */
+  async getOrders(filters?: OrderFilters): Promise<PaginatedResponse<Order>> {
+    const response = await apiClient.get<PaginatedResponse<Order>>('/orders', {
+      params: filters,
     });
     return response.data;
-  },
+  }
 
-  async getByNumber(orderNumber: string): Promise<Order> {
-    const response = await axios.get<ApiResponse<Order>>(
-      `/orders/${orderNumber}`
-    );
+  /**
+   * Créer une nouvelle commande
+   */
+  async createOrder(data: CreateOrderData): Promise<Order> {
+    const response = await apiClient.post<ApiResponse<Order>>('/orders', data);
     return response.data.data;
-  },
+  }
 
-  async create(data: CreateOrderData): Promise<Order> {
-    const response = await axios.post<ApiResponse<Order>>('/orders', data);
+  /**
+   * Récupérer une commande par son numéro
+   */
+  async getOrder(orderNumber: string): Promise<Order> {
+    const response = await apiClient.get<ApiResponse<Order>>(`/orders/${orderNumber}`);
     return response.data.data;
-  },
+  }
 
-  async cancel(orderNumber: string): Promise<Order> {
-    const response = await axios.post<ApiResponse<Order>>(
-      `/orders/${orderNumber}/cancel`
-    );
+  /**
+   * Annuler une commande
+   */
+  async cancelOrder(orderNumber: string): Promise<Order> {
+    const response = await apiClient.post<ApiResponse<Order>>(`/orders/${orderNumber}/cancel`);
     return response.data.data;
-  },
-};
+  }
+}
+
+export default new OrderService();

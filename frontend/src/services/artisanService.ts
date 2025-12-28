@@ -1,39 +1,24 @@
-import axios from '@/lib/axios';
-import type {
-  ArtisanProfile,
-  Product,
-  ApiResponse,
-  PaginatedResponse,
-} from '@/types';
+import apiClient from '@/lib/axios';
+import { ArtisanProfile, ArtisanFilters, ApiResponse, PaginatedResponse } from '@/types';
 
-export const artisanService = {
-  async getAll(page = 1): Promise<PaginatedResponse<ArtisanProfile>> {
-    const response = await axios.get<PaginatedResponse<ArtisanProfile>>(
-      '/artisans',
-      {
-        params: { page },
-      }
-    );
+class ArtisanService {
+  /**
+   * Récupérer la liste des artisans
+   */
+  async getArtisans(filters?: ArtisanFilters): Promise<PaginatedResponse<ArtisanProfile>> {
+    const response = await apiClient.get<PaginatedResponse<ArtisanProfile>>('/artisans', {
+      params: filters,
+    });
     return response.data;
-  },
+  }
 
-  async getBySlug(slug: string): Promise<ArtisanProfile> {
-    const response = await axios.get<ApiResponse<ArtisanProfile>>(
-      `/artisans/${slug}`
-    );
+  /**
+   * Récupérer un artisan par son slug
+   */
+  async getArtisan(slug: string): Promise<ArtisanProfile> {
+    const response = await apiClient.get<ApiResponse<ArtisanProfile>>(`/artisans/${slug}`);
     return response.data.data;
-  },
+  }
+}
 
-  async getProducts(
-    slug: string,
-    page = 1
-  ): Promise<PaginatedResponse<Product>> {
-    const response = await axios.get<PaginatedResponse<Product>>(
-      `/artisans/${slug}/products`,
-      {
-        params: { page },
-      }
-    );
-    return response.data;
-  },
-};
+export default new ArtisanService();
